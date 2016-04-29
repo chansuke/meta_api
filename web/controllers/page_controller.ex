@@ -40,4 +40,13 @@ defmodule MetaApi.PageController do
       |> List.flatten
     json conn, result
   end
+
+  def parallel_search(conn, %{"q" => q}) do
+    result = create_requests(q)
+      |> Enum.map(&Task.async(fn -> response(&1) end))
+      |> Enum.map(&Task.await(&1, 10_000))
+      |> Enum.map(&parse_response/1)
+      |> List.flatten
+    json conn, result
+  end
 end
